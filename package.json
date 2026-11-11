@@ -1,0 +1,22 @@
+{
+  "name": "@ktran-1604/docs-sync",
+  "version": "1.0.0",
+  "description": "CLI installer for HD ERP docs sync scripts",
+  "bin": {
+    "docs-sync": "./bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "assets/"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "docs-sync",
+    "erp",
+    "hd-erp"
+  ],
+  "author": "KhoaTran160401",
+  "license": "MIT"
+}
