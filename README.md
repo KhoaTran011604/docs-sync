@@ -1,4 +1,4 @@
-# @ktran-1604/docs-sync
+# @khoa-hd/docs-sync
 
 One-command setup to sync your Markdown docs to **HD ERP Outline** collections.
 
@@ -21,13 +21,13 @@ One-command setup to sync your Markdown docs to **HD ERP Outline** collections.
 ### Option A — one-off (no install)
 
 ```sh
-npx @ktran-1604/docs-sync
+npx @khoa-hd/docs-sync
 ```
 
 ### Option B — save to project (recommended for teams)
 
 ```sh
-npm install --save-dev @ktran-1604/docs-sync
+npm install --save-dev @khoa-hd/docs-sync
 npx docs-sync
 ```
 
