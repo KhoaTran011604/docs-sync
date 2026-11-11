@@ -21,12 +21,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/KhoaTran160401/sync-docs.git"
+    "url": "git+https://github.com/KhoaTran011604/docs-sync.git"
   },
   "bugs": {
-    "url": "https://github.com/KhoaTran160401/sync-docs/issues"
+    "url": "https://github.com/KhoaTran011604/docs-sync/issues"
   },
-  "homepage": "https://github.com/KhoaTran160401/sync-docs#readme",
+  "homepage": "https://github.com/KhoaTran011604/docs-sync#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
