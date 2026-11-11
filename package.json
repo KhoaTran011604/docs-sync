@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "CLI installer for HD ERP docs sync scripts",
   "bin": {
-    "docs-sync": "./bin/cli.js"
+    "docs-sync": "bin/cli.js"
   },
   "files": [
     "bin/",
@@ -18,5 +18,17 @@
     "hd-erp"
   ],
   "author": "KhoaTran160401",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KhoaTran160401/sync-docs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KhoaTran160401/sync-docs/issues"
+  },
+  "homepage": "https://github.com/KhoaTran160401/sync-docs#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }
