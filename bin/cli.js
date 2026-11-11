@@ -109,9 +109,41 @@ async function main() {
     console.log('📄 Updated: .gitignore (added .env.erp-docs)');
   }
 
+  // Step 6: Inject npm scripts into package.json if present
+  const pkgPath = path.join(cwd, 'package.json');
+  let npmScriptsAdded = false;
+  if (fs.existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      pkg.scripts = pkg.scripts || {};
+      let changed = false;
+      const toAdd = {
+        'docs:setup': 'docs-sync',
+        'docs:sync': 'sh scripts/docs-sync/run.sh',
+        'docs:sync:dry': 'sh scripts/docs-sync/run.sh --dry-run',
+      };
+      for (const [key, val] of Object.entries(toAdd)) {
+        if (!pkg.scripts[key]) {
+          pkg.scripts[key] = val;
+          changed = true;
+        }
+      }
+      if (changed) {
+        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+        console.log('📄 Updated: package.json (added docs:setup, docs:sync, docs:sync:dry)');
+        npmScriptsAdded = true;
+      }
+    } catch {}
+  }
+
   console.log('\n✅ Setup complete!\n');
   console.log('Run the sync with:');
-  console.log('  sh scripts/docs-sync/run.sh\n');
+  if (npmScriptsAdded) {
+    console.log('  npm run docs:sync');
+    console.log('  npm run docs:sync:dry   # preview only\n');
+  } else {
+    console.log('  sh scripts/docs-sync/run.sh\n');
+  }
 }
 
 main().catch((err) => {

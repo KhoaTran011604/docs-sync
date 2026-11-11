@@ -18,9 +18,42 @@ One-command setup to sync your Markdown docs to **HD ERP Outline** collections.
 
 ## Quick Start
 
+### Option A — one-off (no install)
+
 ```sh
 npx @ktran-1604/docs-sync
 ```
+
+### Option B — save to project (recommended for teams)
+
+```sh
+npm install --save-dev @ktran-1604/docs-sync
+npx docs-sync
+```
+
+Package is saved to `devDependencies` so everyone on the team gets it after `npm install`.
+
+You can also add a convenience script to `package.json`:
+
+```json
+{
+  "scripts": {
+    "docs:setup": "docs-sync",
+    "docs:sync": "sh scripts/docs-sync/run.sh",
+    "docs:sync:dry": "sh scripts/docs-sync/run.sh --dry-run"
+  }
+}
+```
+
+Then run:
+
+```sh
+npm run docs:setup   # first-time setup
+npm run docs:sync    # sync docs
+npm run docs:sync:dry  # preview only
+```
+
+---
 
 Follow the prompts:
 
