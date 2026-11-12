@@ -130,12 +130,12 @@ case "$TARGET_URL" in
   */sync-docs) ;;
   *) TARGET_URL="${TARGET_URL}/sync-docs" ;;
 esac
+BASE_URL="${TARGET_URL%/sync-docs}"
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  case "$TARGET_URL" in
-    *\?*) TARGET_URL="${TARGET_URL}&dryRun=1" ;;
-    *) TARGET_URL="${TARGET_URL}?dryRun=1" ;;
-  esac
+  TARGET_URL="${TARGET_URL}?dryRun=1&async=1"
+else
+  TARGET_URL="${TARGET_URL}?async=1"
 fi
 
 USE_NULL=0
@@ -173,7 +173,93 @@ else
   } | tar -T - -czf "$TAR_FILE"
 fi
 
-if ! HTTP_CODE="$(curl -sS -w '%{http_code}' \
+POLL_INTERVAL=3
+POLL_TIMEOUT=900
+MAX_POLL_FAILURES=5
+
+# First string value of a key in a compact JSON body ($1=key, $2=file).
+json_field() {
+  grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$2" 2>/dev/null | head -n 1 \
+    | sed 's/.*:[[:space:]]*"\([^"]*\)"/\1/'
+}
+
+print_body() {
+  if [ -s "$RESP_FILE" ]; then
+    cat "$RESP_FILE"
+    echo ""
+  fi
+}
+
+# Print the final body and exit 0 only when the sync reported "ok": true.
+finish_with_ok_check() {
+  print_body
+  if grep -q '"ok"[[:space:]]*:[[:space:]]*true' "$RESP_FILE" 2>/dev/null; then
+    exit 0
+  fi
+  exit 1
+}
+
+poll_job() {
+  job_id="$1"
+  case "$job_id" in
+    "" | *[!0-9a-fA-F-]*)
+      echo "error: server returned an invalid job id" >&2
+      exit 1
+      ;;
+  esac
+  status_url="${BASE_URL}/sync-docs/jobs/${job_id}"
+  echo "[docs-sync] job $job_id accepted" >&2
+
+  elapsed=0
+  failures=0
+  last_status=""
+  while [ "$elapsed" -lt "$POLL_TIMEOUT" ]; do
+    sleep "$POLL_INTERVAL"
+    elapsed=$((elapsed + POLL_INTERVAL))
+
+    code="$(curl -sS --max-time 30 -w '%{http_code}' \
+      -H "Authorization: Bearer $TOKEN" \
+      -o "$RESP_FILE" "$status_url" 2>/dev/null)" || code=""
+
+    case "$code" in
+      200) failures=0 ;;
+      "" | 000 | 429 | 5??)
+        failures=$((failures + 1))
+        if [ "$failures" -ge "$MAX_POLL_FAILURES" ]; then
+          print_body
+          echo "error: lost contact with docs sync API while polling job $job_id (last HTTP '${code:-none}'); check status at $status_url" >&2
+          exit 1
+        fi
+        continue
+        ;;
+      *)
+        print_body
+        echo "error: polling job $job_id failed with HTTP $code" >&2
+        exit 1
+        ;;
+    esac
+
+    status="$(json_field status "$RESP_FILE")"
+    case "$status" in
+      succeeded) finish_with_ok_check ;;
+      failed)
+        print_body
+        exit 1
+        ;;
+      queued | running)
+        if [ "$status" != "$last_status" ]; then
+          echo "[docs-sync] job $job_id: $status (elapsed ${elapsed}s)" >&2
+          last_status="$status"
+        fi
+        ;;
+    esac
+  done
+
+  echo "error: timed out waiting for job $job_id; check status at $status_url" >&2
+  exit 1
+}
+
+if ! HTTP_CODE="$(curl -sS --max-time 120 -w '%{http_code}' \
   -X POST "$TARGET_URL" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/gzip" \
@@ -183,17 +269,11 @@ if ! HTTP_CODE="$(curl -sS -w '%{http_code}' \
   exit 1
 fi
 
-if [ -s "$RESP_FILE" ]; then
-  cat "$RESP_FILE"
-  echo ""
-fi
-
-if [ "$HTTP_CODE" -ge 400 ] 2>/dev/null; then
-  exit 1
-fi
-
-if ! grep -q '"ok"[[:space:]]*:[[:space:]]*true' "$RESP_FILE" 2>/dev/null; then
-  exit 1
-fi
-
-exit 0
+case "$HTTP_CODE" in
+  202) poll_job "$(json_field jobId "$RESP_FILE")" ;;
+  200) finish_with_ok_check ;;
+  *)
+    print_body
+    exit 1
+    ;;
+esac

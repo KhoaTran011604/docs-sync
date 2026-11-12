@@ -68,6 +68,10 @@ sh scripts/docs-sync/run.sh --dry-run
 ```sh
 sh scripts/docs-sync/run.sh
 ```
+The script uploads the archive with `?async=1`, receives a job id (HTTP 202), then polls `GET /sync-docs/jobs/{jobId}` every 3 seconds until the job reaches a final state (overall timeout: 900s). Progress lines (`[docs-sync] job <id>: queued|running (elapsed Ns)`) go to stderr; the final JSON result goes to stdout. This avoids proxy/gateway timeouts (e.g. HTTP 524) on large first-time syncs.
+
+> **Upgrading**: `run.sh` is copied into your repo. Re-copy the latest version to get async polling. Servers without async support still work (the script falls back to the synchronous HTTP 200 response).
+
 
 ---
 
@@ -132,7 +136,6 @@ docs-sync:
 
 **GitLab Variables:**
 - Add `ERP_DOCS_SYNC_TOKEN` to **Settings → CI/CD → Variables** (Mask variable).
-
 ---
 
 ## Documentation Rules
@@ -149,5 +152,5 @@ docs-sync:
 ## Exit Codes
 
 - `0`: Sync succeeded (`"ok": true`).
-- `1`: Sync failed (HTTP error, connection issue, or missing variable).
+- `1`: Sync failed (HTTP error incl. 409 sync already in progress, job `failed` or `ok` not true, connection/polling errors, 900s polling timeout, or missing variable).
 - `2`: Configuration error (e.g., literal token committed in `.erp-docs.config.json`).
