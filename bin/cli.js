@@ -26,7 +26,7 @@ function ask(rl, question) {
   return new Promise((resolve) => rl.question(question, resolve));
 }
 
-function generateWorkflowYaml({ branches, docsDir, apiUrl }) {
+function generateGithubWorkflowYaml({ branches, docsDir, apiUrl }) {
   const branchLines = branches.map((b) => `      - ${b}`).join('\n');
   const cleanDocsDir = docsDir.replace(/^\/+|\/+$/g, '') || DEFAULT_DOCS_DIR;
 
@@ -56,6 +56,32 @@ jobs:
         run: |
           chmod +x scripts/docs-sync/run.sh
           sh scripts/docs-sync/run.sh
+`;
+}
+
+function generateGitlabCiYaml({ branches, docsDir, apiUrl }) {
+  const cleanDocsDir = docsDir.replace(/^\/+|\/+$/g, '') || DEFAULT_DOCS_DIR;
+  const branchCondition = branches
+    .map((b) => `$CI_COMMIT_BRANCH == "${b}"`)
+    .join(' || ');
+
+  return `# HD ERP Docs Sync
+docs-sync:
+  stage: deploy
+  image: ubuntu:latest
+  rules:
+    - if: '${branchCondition}'
+      changes:
+        - '${cleanDocsDir}/**/*'
+        - '.erp-docs.config.json'
+        - 'scripts/docs-sync/**/*'
+  variables:
+    PERMISSION_API_PUBLIC_URL: '${apiUrl}'
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git tar curl sed grep
+  script:
+    - chmod +x scripts/docs-sync/run.sh
+    - sh scripts/docs-sync/run.sh
 `;
 }
 
@@ -106,11 +132,20 @@ async function main() {
     'CI/CD trigger branch (e.g. dev, main, master - leave blank to skip): '
   )).trim();
 
-  rl.close();
-
   const cicdBranches = cicdBranchInput
     ? cicdBranchInput.split(',').map((b) => b.trim()).filter(Boolean)
     : [];
+
+  let cicdProvider = '';
+  if (cicdBranches.length > 0) {
+    const providerInput = (await ask(rl,
+      'CI/CD platform (github / gitlab) [github]: '
+    )).trim().toLowerCase();
+
+    cicdProvider = (providerInput === 'gitlab' || providerInput === 'gl') ? 'gitlab' : 'github';
+  }
+
+  rl.close();
 
   // Step 3: Write .env.erp-docs
   const envPath = path.join(cwd, '.env.erp-docs');
@@ -176,6 +211,47 @@ async function main() {
     } catch {}
   }
 
+  // Step 7: Generate CI/CD file if configured
+  let cicdYamlContent = '';
+  let cicdFilePath = '';
+  if (cicdBranches.length > 0) {
+    if (cicdProvider === 'gitlab') {
+      cicdFilePath = '.gitlab-ci.yml';
+      const gitlabCiPath = path.join(cwd, '.gitlab-ci.yml');
+      cicdYamlContent = generateGitlabCiYaml({
+        branches: cicdBranches,
+        docsDir,
+        apiUrl,
+      });
+
+      if (fs.existsSync(gitlabCiPath)) {
+        const existingContent = fs.readFileSync(gitlabCiPath, 'utf8');
+        if (!existingContent.includes('docs-sync:')) {
+          const separator = existingContent.endsWith('\n') ? '\n' : '\n\n';
+          fs.writeFileSync(gitlabCiPath, existingContent + separator + cicdYamlContent, 'utf8');
+          console.log('📄 Updated: .gitlab-ci.yml (appended docs-sync job)');
+        } else {
+          console.log('📄 .gitlab-ci.yml already contains docs-sync job');
+        }
+      } else {
+        fs.writeFileSync(gitlabCiPath, cicdYamlContent, 'utf8');
+        console.log('📄 Written: .gitlab-ci.yml');
+      }
+    } else {
+      cicdFilePath = '.github/workflows/docs-sync.yml';
+      const workflowDir = path.join(cwd, '.github', 'workflows');
+      fs.mkdirSync(workflowDir, { recursive: true });
+      const workflowPath = path.join(workflowDir, 'docs-sync.yml');
+      cicdYamlContent = generateGithubWorkflowYaml({
+        branches: cicdBranches,
+        docsDir,
+        apiUrl,
+      });
+      fs.writeFileSync(workflowPath, cicdYamlContent, 'utf8');
+      console.log('📄 Written: .github/workflows/docs-sync.yml');
+    }
+  }
+
   console.log('\n✅ Setup complete!\n');
   console.log('Run the sync with:');
   console.log('  sh scripts/docs-sync/run.sh');
@@ -187,34 +263,45 @@ async function main() {
   console.log('');
 
   if (cicdBranches.length > 0) {
-    const yamlContent = generateWorkflowYaml({
-      branches: cicdBranches,
-      docsDir,
-      apiUrl,
-    });
-
-    console.log('─────────────────────────────────────────────────────────────────');
-    console.log('🚀 Suggested CI/CD Workflow (.github/workflows/docs-sync.yml):');
-    console.log('─────────────────────────────────────────────────────────────────');
-    console.log(yamlContent);
-    console.log('─────────────────────────────────────────────────────────────────');
-    console.log('📖 Basic CI/CD Setup Instructions:');
-    console.log('  1. Create file: .github/workflows/docs-sync.yml in your repository.');
-    console.log('  2. Copy and paste the suggested YAML workflow above into that file.');
-    console.log('  3. Configure Secret in GitHub Repository:');
-    console.log('     • Go to: Settings → Secrets and variables → Actions');
-    console.log('     • Click "New repository secret"');
-    console.log('     • Name: ERP_DOCS_SYNC_TOKEN');
-    console.log('     • Secret: paste your sync token');
-    console.log('  4. (Optional) Configure Variable:');
-    console.log('     • Under "Repository variables", click "New repository variable"');
-    console.log('     • Name: PERMISSION_API_PUBLIC_URL');
-    console.log(`     • Value: ${apiUrl}`);
-    console.log(`  5. Commit & push changes on branch [${cicdBranches.join(', ')}]. Docs will sync automatically!`);
-    console.log('─────────────────────────────────────────────────────────────────\n');
+    if (cicdProvider === 'gitlab') {
+      console.log('─────────────────────────────────────────────────────────────────');
+      console.log(`🚀 Generated GitLab CI Configuration (${cicdFilePath}):`);
+      console.log('─────────────────────────────────────────────────────────────────');
+      console.log(cicdYamlContent);
+      console.log('─────────────────────────────────────────────────────────────────');
+      console.log('📖 Basic GitLab CI/CD Setup Instructions:');
+      console.log(`  1. Configuration file has been created/updated at: ${cicdFilePath}`);
+      console.log('  2. Configure Secret Variable in GitLab:');
+      console.log('     • Go to: Settings → CI/CD → Variables (expand)');
+      console.log('     • Click "Add variable"');
+      console.log('     • Key: ERP_DOCS_SYNC_TOKEN');
+      console.log('     • Value: paste your sync token');
+      console.log('     • Type: Variable | Check "Mask variable"');
+      console.log(`  3. Commit & push changes on branch [${cicdBranches.join(', ')}]. Docs will sync automatically!`);
+      console.log('─────────────────────────────────────────────────────────────────\n');
+    } else {
+      console.log('─────────────────────────────────────────────────────────────────');
+      console.log(`🚀 Generated GitHub Actions Workflow (${cicdFilePath}):`);
+      console.log('─────────────────────────────────────────────────────────────────');
+      console.log(cicdYamlContent);
+      console.log('─────────────────────────────────────────────────────────────────');
+      console.log('📖 Basic GitHub Actions Setup Instructions:');
+      console.log(`  1. Workflow file has been created at: ${cicdFilePath}`);
+      console.log('  2. Configure Secret in GitHub Repository:');
+      console.log('     • Go to: Settings → Secrets and variables → Actions');
+      console.log('     • Click "New repository secret"');
+      console.log('     • Name: ERP_DOCS_SYNC_TOKEN');
+      console.log('     • Secret: paste your sync token');
+      console.log('  3. (Optional) Configure Variable:');
+      console.log('     • Under "Repository variables", click "New repository variable"');
+      console.log('     • Name: PERMISSION_API_PUBLIC_URL');
+      console.log(`     • Value: ${apiUrl}`);
+      console.log(`  4. Commit & push changes on branch [${cicdBranches.join(', ')}]. Docs will sync automatically!`);
+      console.log('─────────────────────────────────────────────────────────────────\n');
+    }
   } else {
     console.log('💡 CI/CD setup skipped (no branch specified).');
-    console.log('   To set up CI/CD later, you can create .github/workflows/docs-sync.yml');
+    console.log('   To set up CI/CD later, you can add .github/workflows/docs-sync.yml or .gitlab-ci.yml');
     console.log('   triggering on your desired branch (e.g. main, dev).\n');
   }
 }
