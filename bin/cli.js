@@ -252,19 +252,9 @@ async function main() {
     }
   }
 
-  console.log('\n✅ Setup complete!\n');
-  console.log('Run the sync with:');
-  console.log('  sh scripts/docs-sync/run.sh');
-  if (npmScriptsAdded) {
-    console.log('  # or via npm:');
-    console.log('  npm run docs:sync');
-    console.log('  npm run docs:sync:dry   # preview only');
-  }
-  console.log('');
-
   if (cicdBranches.length > 0) {
     if (cicdProvider === 'gitlab') {
-      console.log('─────────────────────────────────────────────────────────────────');
+      console.log('\n─────────────────────────────────────────────────────────────────');
       console.log(`🚀 Generated GitLab CI Configuration (${cicdFilePath}):`);
       console.log('─────────────────────────────────────────────────────────────────');
       console.log(cicdYamlContent);
@@ -280,7 +270,7 @@ async function main() {
       console.log(`  3. Commit & push changes on branch [${cicdBranches.join(', ')}]. Docs will sync automatically!`);
       console.log('─────────────────────────────────────────────────────────────────\n');
     } else {
-      console.log('─────────────────────────────────────────────────────────────────');
+      console.log('\n─────────────────────────────────────────────────────────────────');
       console.log(`🚀 Generated GitHub Actions Workflow (${cicdFilePath}):`);
       console.log('─────────────────────────────────────────────────────────────────');
       console.log(cicdYamlContent);
@@ -300,10 +290,22 @@ async function main() {
       console.log('─────────────────────────────────────────────────────────────────\n');
     }
   } else {
-    console.log('💡 CI/CD setup skipped (no branch specified).');
+    console.log('\n💡 CI/CD setup skipped (no branch specified).');
     console.log('   To set up CI/CD later, you can add .github/workflows/docs-sync.yml or .gitlab-ci.yml');
     console.log('   triggering on your desired branch (e.g. main, dev).\n');
   }
+
+  console.log('✅ Setup complete!\n');
+  console.log('Run the sync with:');
+  console.log('  sh scripts/docs-sync/run.sh');
+  console.log("  # If you get \"required command 'sed' not found in PATH\", use bash instead of sh:");
+  console.log('  bash scripts/docs-sync/run.sh');
+  if (npmScriptsAdded) {
+    console.log('  # or via npm:');
+    console.log('  npm run docs:sync');
+    console.log('  npm run docs:sync:dry   # preview only');
+  }
+  console.log('');
 }
 
 main().catch((err) => {
