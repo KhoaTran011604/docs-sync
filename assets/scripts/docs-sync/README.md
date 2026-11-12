@@ -71,6 +71,45 @@ sh scripts/docs-sync/run.sh
 
 ---
 
+## CI/CD Pipeline Setup (GitHub Actions)
+
+To automatically sync documentation when changes are pushed to your repository, add `.github/workflows/docs-sync.yml`:
+
+```yaml
+name: HD ERP Docs Sync
+
+on:
+  push:
+    branches:
+      - main  # or dev, master
+    paths:
+      - 'docs/**'
+      - '.erp-docs.config.json'
+      - 'scripts/docs-sync/**'
+  workflow_dispatch:
+
+jobs:
+  sync-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run HD ERP Docs Sync
+        env:
+          PERMISSION_API_PUBLIC_URL: ${{ vars.PERMISSION_API_PUBLIC_URL || 'https://hd-erp-permission.dev.hdwebsoft.co' }}
+          ERP_DOCS_SYNC_TOKEN: ${{ secrets.ERP_DOCS_SYNC_TOKEN }}
+        run: |
+          chmod +x scripts/docs-sync/run.sh
+          sh scripts/docs-sync/run.sh
+```
+
+**Repository Secrets & Variables:**
+- Add `ERP_DOCS_SYNC_TOKEN` to **Settings → Secrets and variables → Actions → Repository secrets**.
+- (Optional) Add `PERMISSION_API_PUBLIC_URL` to **Repository variables** if not using the default endpoint.
+
+---
+
 ## Documentation Rules
 
 | Item | Rule |
