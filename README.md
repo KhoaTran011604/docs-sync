@@ -62,6 +62,8 @@ PERMISSION_API_PUBLIC_URL [https://hd-erp-permission.dev.hdwebsoft.co]:
 ERP_DOCS_SYNC_TOKEN: hdk_...
 collectionId (UUID): xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 Docs directory [docs]: 
+CI/CD trigger branch (e.g. dev, main, master - leave blank to skip): main
+CI/CD platform (github / gitlab) [github]: github
 ```
 
 After setup, run the sync:
@@ -73,6 +75,8 @@ sh scripts/docs-sync/run.sh
 sh scripts/docs-sync/run.sh --dry-run
 ```
 
+If you configured a CI/CD branch, the CLI will automatically generate the pipeline configuration file (`.github/workflows/docs-sync.yml` for GitHub or `.gitlab-ci.yml` for GitLab) and show setup instructions.
+
 ---
 
 ## What Gets Created
@@ -83,6 +87,8 @@ sh scripts/docs-sync/run.sh --dry-run
 | `scripts/docs-sync/README.md` | Script usage guide |
 | `.erp-docs.config.json` | Collection config (safe to commit) |
 | `.env.erp-docs` | Secrets — **never commit** |
+| `.github/workflows/docs-sync.yml` | *(Optional)* Auto-generated GitHub Actions workflow |
+| `.gitlab-ci.yml` | *(Optional)* Auto-generated / updated GitLab CI config |
 
 ---
 
@@ -106,6 +112,79 @@ sh scripts/docs-sync/run.sh --dry-run
 PERMISSION_API_PUBLIC_URL=https://hd-erp-permission.dev.hdwebsoft.co
 ERP_DOCS_SYNC_TOKEN=hdk_your_token
 ```
+
+---
+
+## CI/CD Integration
+
+### Option 1: GitHub Actions (`.github/workflows/docs-sync.yml`)
+
+The CLI automatically generates this file if you choose `github`:
+
+```yaml
+name: HD ERP Docs Sync
+
+on:
+  push:
+    branches:
+      - main  # or dev, master
+    paths:
+      - 'docs/**'
+      - '.erp-docs.config.json'
+      - 'scripts/docs-sync/**'
+  workflow_dispatch:
+
+jobs:
+  sync-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run HD ERP Docs Sync
+        env:
+          PERMISSION_API_PUBLIC_URL: ${{ vars.PERMISSION_API_PUBLIC_URL || 'https://hd-erp-permission.dev.hdwebsoft.co' }}
+          ERP_DOCS_SYNC_TOKEN: ${{ secrets.ERP_DOCS_SYNC_TOKEN }}
+        run: |
+          chmod +x scripts/docs-sync/run.sh
+          sh scripts/docs-sync/run.sh
+```
+
+**Secrets & Variables setup on GitHub:**
+- Go to repository **Settings** → **Secrets and variables** → **Actions**.
+- Under **Repository secrets**, add `ERP_DOCS_SYNC_TOKEN` with your sync token.
+- (Optional) Under **Repository variables**, add `PERMISSION_API_PUBLIC_URL` if you need to point to a custom API endpoint.
+
+### Option 2: GitLab CI (`.gitlab-ci.yml`)
+
+The CLI automatically generates or appends to `.gitlab-ci.yml` if you choose `gitlab`:
+
+```yaml
+# HD ERP Docs Sync
+docs-sync:
+  stage: deploy
+  image: ubuntu:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - 'docs/**/*'
+        - '.erp-docs.config.json'
+        - 'scripts/docs-sync/**/*'
+  variables:
+    PERMISSION_API_PUBLIC_URL: 'https://hd-erp-permission.dev.hdwebsoft.co'
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git tar curl sed grep
+  script:
+    - chmod +x scripts/docs-sync/run.sh
+    - sh scripts/docs-sync/run.sh
+```
+
+**Variable setup on GitLab:**
+- Go to project **Settings** → **CI/CD** → **Variables** (expand).
+- Click **Add variable**:
+  - Key: `ERP_DOCS_SYNC_TOKEN`
+  - Value: `<your sync token>`
+  - Type: `Variable` | Check **Mask variable**
 
 ---
 
