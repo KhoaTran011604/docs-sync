@@ -2,8 +2,8 @@ name: Publish to npm
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 jobs:
   publish:
@@ -19,20 +19,25 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Verify package version matches tag
+      - name: Check if version already exists on npm
+        id: check
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_NAME=$(node -p "require('./package.json').name")
           PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "❌ Tag v$TAG_VERSION does not match package.json version $PKG_VERSION"
-            exit 1
+          if npm view "$PKG_NAME@$PKG_VERSION" version >/dev/null 2>&1; then
+            echo "⚠️ $PKG_NAME@$PKG_VERSION already published - skipping (bump version in package.json to release)"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "✓ $PKG_NAME@$PKG_VERSION is new"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "✓ Version $PKG_VERSION matches tag"
 
       - name: Validate package contents (dry run)
+        if: steps.check.outputs.publish == 'true'
         run: npm pack --dry-run
 
       - name: Publish to npm
+        if: steps.check.outputs.publish == 'true'
         run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
