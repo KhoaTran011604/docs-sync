@@ -75,6 +75,8 @@ sh scripts/docs-sync/run.sh
 sh scripts/docs-sync/run.sh --dry-run
 ```
 
+> If you get `error: required command 'sed' not found in PATH`, run it with `bash` instead of `sh`: `bash scripts/docs-sync/run.sh`
+
 If you configured a CI/CD branch, the CLI will automatically generate the pipeline configuration file (`.github/workflows/docs-sync.yml` for GitHub or `.gitlab-ci.yml` for GitLab) and show setup instructions.
 
 ---

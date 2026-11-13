@@ -64,6 +64,8 @@ sh scripts/docs-sync/run.sh --dry-run
 ```
 *(On Windows PowerShell, run: `sh scripts/docs-sync/run.sh --dry-run` or `bash scripts/docs-sync/run.sh --dry-run`)*
 
+> If you get `error: required command 'sed' not found in PATH`, run it with `bash` instead of `sh`: `bash scripts/docs-sync/run.sh`
+
 ### Live Sync
 ```sh
 sh scripts/docs-sync/run.sh
