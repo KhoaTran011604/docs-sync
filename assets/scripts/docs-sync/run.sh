@@ -163,7 +163,8 @@ if [ "$USE_NULL" -eq 1 ]; then
       ':(icase)*.gif' \
       ':(icase)*.svg' \
       ':(icase)*.webp'
-  } | tar --null -T - -czf "$TAR_FILE"
+  } | xargs -0 sh -c 'for f do [ -e "$f" ] && printf "%s\0" "$f"; done' _ \
+    | tar --null -T - -czf "$TAR_FILE"
 else
   {
     git ls-files --cached --others --exclude-standard -- .erp-docs.config.json
@@ -175,7 +176,9 @@ else
       ':(icase)*.gif' \
       ':(icase)*.svg' \
       ':(icase)*.webp'
-  } | tar -T - -czf "$TAR_FILE"
+  } | while IFS= read -r f; do
+    [ -e "$f" ] && printf '%s\n' "$f"
+  done | tar -T - -czf "$TAR_FILE"
 fi
 
 POLL_INTERVAL=3
