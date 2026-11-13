@@ -18,15 +18,17 @@ fi
 cd "$(git rev-parse --show-toplevel)"
 
 DRY_RUN=0
+ALLOW_MASS_TRASH=0
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
+    --allow-mass-trash) ALLOW_MASS_TRASH=1 ;;
     -h|--help)
-      echo "Usage: $0 [--dry-run]"
+      echo "Usage: $0 [--dry-run] [--allow-mass-trash]"
       exit 0
       ;;
     *)
-      echo "error: unrecognized argument '$arg'. Usage: $0 [--dry-run]" >&2
+      echo "error: unrecognized argument '$arg'. Usage: $0 [--dry-run] [--allow-mass-trash]" >&2
       exit 1
       ;;
   esac
@@ -136,6 +138,9 @@ if [ "$DRY_RUN" -eq 1 ]; then
   TARGET_URL="${TARGET_URL}?dryRun=1&async=1"
 else
   TARGET_URL="${TARGET_URL}?async=1"
+fi
+if [ "$ALLOW_MASS_TRASH" -eq 1 ]; then
+  TARGET_URL="${TARGET_URL}&allowMassTrash=1"
 fi
 
 USE_NULL=0
