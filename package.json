@@ -1,5 +1,5 @@
 {
-  "name": "@khoa-hd/docs-sync",
+  "name": "@ktran-1604/docs-sync",
   "version": "1.3.2",
   "description": "CLI installer for HD ERP docs sync scripts",
   "bin": {

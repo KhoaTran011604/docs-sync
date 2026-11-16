@@ -1,4 +1,4 @@
-# @khoa-hd/docs-sync
+# @ktran-1604/docs-sync
 
 One-command setup to sync your Markdown docs to **HD ERP Outline** collections.
 
@@ -21,13 +21,13 @@ One-command setup to sync your Markdown docs to **HD ERP Outline** collections.
 ### Option A — one-off (no install)
 
 ```sh
-npx @khoa-hd/docs-sync
+npx @ktran-1604/docs-sync
 ```
 
 ### Option B — save to project (recommended for teams)
 
 ```sh
-npm install --save-dev @khoa-hd/docs-sync
+npm install --save-dev @ktran-1604/docs-sync
 npx docs-sync
 ```
 
@@ -58,10 +58,10 @@ npm run docs:sync:dry  # preview only
 Follow the prompts:
 
 ```
-PERMISSION_API_PUBLIC_URL [https://hd-erp-permission.dev.hdwebsoft.co]: 
+PERMISSION_API_PUBLIC_URL [https://hd-erp-permission.dev.hdwebsoft.co]:
 ERP_DOCS_SYNC_TOKEN: hdk_...
 collectionId (UUID): xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-Docs directory [docs]: 
+Docs directory [docs]:
 CI/CD trigger branch (e.g. dev, main, master - leave blank to skip): main
 CI/CD platform (github / gitlab) [github]: github
 ```
@@ -83,20 +83,21 @@ If you configured a CI/CD branch, the CLI will automatically generate the pipeli
 
 ## What Gets Created
 
-| Path | Description |
-|------|-------------|
-| `scripts/docs-sync/run.sh` | Sync script |
-| `scripts/docs-sync/README.md` | Script usage guide |
-| `.erp-docs.config.json` | Collection config (safe to commit) |
-| `.env.erp-docs` | Secrets — **never commit** |
-| `.github/workflows/docs-sync.yml` | *(Optional)* Auto-generated GitHub Actions workflow |
-| `.gitlab-ci.yml` | *(Optional)* Auto-generated / updated GitLab CI config |
+| Path                              | Description                                            |
+| --------------------------------- | ------------------------------------------------------ |
+| `scripts/docs-sync/run.sh`        | Sync script                                            |
+| `scripts/docs-sync/README.md`     | Script usage guide                                     |
+| `.erp-docs.config.json`           | Collection config (safe to commit)                     |
+| `.env.erp-docs`                   | Secrets — **never commit**                             |
+| `.github/workflows/docs-sync.yml` | _(Optional)_ Auto-generated GitHub Actions workflow    |
+| `.gitlab-ci.yml`                  | _(Optional)_ Auto-generated / updated GitLab CI config |
 
 ---
 
 ## Configuration
 
 `.erp-docs.config.json` (committed):
+
 ```json
 {
   "apiUrl": "${PERMISSION_API_PUBLIC_URL}",
@@ -110,6 +111,7 @@ If you configured a CI/CD branch, the CLI will automatically generate the pipeli
 ```
 
 `.env.erp-docs` (git-ignored):
+
 ```env
 PERMISSION_API_PUBLIC_URL=https://hd-erp-permission.dev.hdwebsoft.co
 ERP_DOCS_SYNC_TOKEN=hdk_your_token
@@ -129,11 +131,11 @@ name: HD ERP Docs Sync
 on:
   push:
     branches:
-      - main  # or dev, master
+      - main # or dev, master
     paths:
-      - 'docs/**'
-      - '.erp-docs.config.json'
-      - 'scripts/docs-sync/**'
+      - "docs/**"
+      - ".erp-docs.config.json"
+      - "scripts/docs-sync/**"
   workflow_dispatch:
 
 jobs:
@@ -153,6 +155,7 @@ jobs:
 ```
 
 **Secrets & Variables setup on GitHub:**
+
 - Go to repository **Settings** → **Secrets and variables** → **Actions**.
 - Under **Repository secrets**, add `ERP_DOCS_SYNC_TOKEN` with your sync token.
 - (Optional) Under **Repository variables**, add `PERMISSION_API_PUBLIC_URL` if you need to point to a custom API endpoint.
@@ -169,11 +172,11 @@ docs-sync:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
-        - 'docs/**/*'
-        - '.erp-docs.config.json'
-        - 'scripts/docs-sync/**/*'
+        - "docs/**/*"
+        - ".erp-docs.config.json"
+        - "scripts/docs-sync/**/*"
   variables:
-    PERMISSION_API_PUBLIC_URL: 'https://hd-erp-permission.dev.hdwebsoft.co'
+    PERMISSION_API_PUBLIC_URL: "https://hd-erp-permission.dev.hdwebsoft.co"
   before_script:
     - apt-get update -qq && apt-get install -y -qq git tar curl sed grep
   script:
@@ -182,6 +185,7 @@ docs-sync:
 ```
 
 **Variable setup on GitLab:**
+
 - Go to project **Settings** → **CI/CD** → **Variables** (expand).
 - Click **Add variable**:
   - Key: `ERP_DOCS_SYNC_TOKEN`
