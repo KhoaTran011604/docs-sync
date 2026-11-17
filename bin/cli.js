@@ -6,7 +6,7 @@ const fs = require('fs');
 const readline = require('readline');
 
 const ASSETS_SCRIPTS = path.join(__dirname, '..', 'assets', 'scripts');
-const DEFAULT_API_URL = 'https://hd-erp-permission.dev.hdwebsoft.co';
+const DEFAULT_API_URL = 'https://permission.hdwebsoft.co';
 const DEFAULT_DOCS_DIR = 'docs';
 
 function copyDirSync(src, dest) {

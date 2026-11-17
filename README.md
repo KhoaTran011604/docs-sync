@@ -58,7 +58,7 @@ npm run docs:sync:dry  # preview only
 Follow the prompts:
 
 ```
-PERMISSION_API_PUBLIC_URL [https://hd-erp-permission.dev.hdwebsoft.co]:
+PERMISSION_API_PUBLIC_URL [https://permission.hdwebsoft.co]:
 ERP_DOCS_SYNC_TOKEN: hdk_...
 collectionId (UUID): xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 Docs directory [docs]:
@@ -113,7 +113,7 @@ If you configured a CI/CD branch, the CLI will automatically generate the pipeli
 `.env.erp-docs` (git-ignored):
 
 ```env
-PERMISSION_API_PUBLIC_URL=https://hd-erp-permission.dev.hdwebsoft.co
+PERMISSION_API_PUBLIC_URL=https://permission.hdwebsoft.co
 ERP_DOCS_SYNC_TOKEN=hdk_your_token
 ```
 
@@ -147,7 +147,7 @@ jobs:
 
       - name: Run HD ERP Docs Sync
         env:
-          PERMISSION_API_PUBLIC_URL: ${{ vars.PERMISSION_API_PUBLIC_URL || 'https://hd-erp-permission.dev.hdwebsoft.co' }}
+          PERMISSION_API_PUBLIC_URL: ${{ vars.PERMISSION_API_PUBLIC_URL || 'https://permission.hdwebsoft.co' }}
           ERP_DOCS_SYNC_TOKEN: ${{ secrets.ERP_DOCS_SYNC_TOKEN }}
         run: |
           chmod +x scripts/docs-sync/run.sh
@@ -176,7 +176,7 @@ docs-sync:
         - ".erp-docs.config.json"
         - "scripts/docs-sync/**/*"
   variables:
-    PERMISSION_API_PUBLIC_URL: "https://hd-erp-permission.dev.hdwebsoft.co"
+    PERMISSION_API_PUBLIC_URL: "https://permission.hdwebsoft.co"
   before_script:
     - apt-get update -qq && apt-get install -y -qq git tar curl sed grep
   script:

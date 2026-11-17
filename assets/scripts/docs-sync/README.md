@@ -16,25 +16,33 @@ Lightweight shell script (`run.sh`) to synchronize Markdown documentation and im
 ## Quick Setup (3 Steps)
 
 ### 1. Copy Configuration Templates
+
 From the root of your repository:
+
 ```sh
 cp scripts/docs-sync/erp-docs.config.example.json .erp-docs.config.json
 cp scripts/docs-sync/env.erp-docs.example .env.erp-docs
 ```
 
 ### 2. Configure Secrets (`.env.erp-docs`)
+
 Edit `.env.erp-docs` with your actual URL and token:
+
 ```env
 PERMISSION_API_PUBLIC_URL=https://docs.erp.example.com
 ERP_DOCS_SYNC_TOKEN=hdk_your_project_sync_token
 ```
+
 > **Security Rule**: Add `.env.erp-docs` to `.gitignore`. Never commit tokens!
+
 ```sh
 echo ".env.erp-docs" >> .gitignore
 ```
 
 ### 3. Configure Project Settings (`.erp-docs.config.json`)
+
 Edit `.erp-docs.config.json` in your repository root:
+
 ```json
 {
   "apiUrl": "${PERMISSION_API_PUBLIC_URL}",
@@ -42,14 +50,11 @@ Edit `.erp-docs.config.json` in your repository root:
   "envFile": "scripts/docs-sync/.env.erp-docs",
   "collectionId": "<YOUR_COLLECTION_UUID>",
   "root": "docs/",
-  "include": [
-    "docs/**"
-  ],
-  "exclude": [
-    "docs/internal/**"
-  ]
+  "include": ["docs/**"],
+  "exclude": ["docs/internal/**"]
 }
 ```
+
 > **Important**: Keep `"${PERMISSION_API_PUBLIC_URL}"` and `"${ERP_DOCS_SYNC_TOKEN}"` as literal placeholder strings. Do not paste real tokens into this JSON file.
 
 ---
@@ -59,21 +64,24 @@ Edit `.erp-docs.config.json` in your repository root:
 Run the script from anywhere inside the Git repository:
 
 ### Dry Run (Preview changes safely)
+
 ```sh
 sh scripts/docs-sync/run.sh --dry-run
 ```
-*(On Windows PowerShell, run: `sh scripts/docs-sync/run.sh --dry-run` or `bash scripts/docs-sync/run.sh --dry-run`)*
+
+_(On Windows PowerShell, run: `sh scripts/docs-sync/run.sh --dry-run` or `bash scripts/docs-sync/run.sh --dry-run`)_
 
 > If you get `error: required command 'sed' not found in PATH`, run it with `bash` instead of `sh`: `bash scripts/docs-sync/run.sh`
 
 ### Live Sync
+
 ```sh
 sh scripts/docs-sync/run.sh
 ```
+
 The script uploads the archive with `?async=1`, receives a job id (HTTP 202), then polls `GET /sync-docs/jobs/{jobId}` every 3 seconds until the job reaches a final state (overall timeout: 900s). Progress lines (`[docs-sync] job <id>: queued|running (elapsed Ns)`) go to stderr; the final JSON result goes to stdout. This avoids proxy/gateway timeouts (e.g. HTTP 524) on large first-time syncs.
 
 > **Upgrading**: `run.sh` is copied into your repo. Re-copy the latest version to get async polling. Servers without async support still work (the script falls back to the synchronous HTTP 200 response).
-
 
 ---
 
@@ -87,11 +95,11 @@ name: HD ERP Docs Sync
 on:
   push:
     branches:
-      - main  # or dev, master
+      - main # or dev, master
     paths:
-      - 'docs/**'
-      - '.erp-docs.config.json'
-      - 'scripts/docs-sync/**'
+      - "docs/**"
+      - ".erp-docs.config.json"
+      - "scripts/docs-sync/**"
   workflow_dispatch:
 
 jobs:
@@ -103,7 +111,7 @@ jobs:
 
       - name: Run HD ERP Docs Sync
         env:
-          PERMISSION_API_PUBLIC_URL: ${{ vars.PERMISSION_API_PUBLIC_URL || 'https://hd-erp-permission.dev.hdwebsoft.co' }}
+          PERMISSION_API_PUBLIC_URL: ${{ vars.PERMISSION_API_PUBLIC_URL || 'https://permission.hdwebsoft.co' }}
           ERP_DOCS_SYNC_TOKEN: ${{ secrets.ERP_DOCS_SYNC_TOKEN }}
         run: |
           chmod +x scripts/docs-sync/run.sh
@@ -111,6 +119,7 @@ jobs:
 ```
 
 **GitHub Secrets & Variables:**
+
 - Add `ERP_DOCS_SYNC_TOKEN` to **Settings → Secrets and variables → Actions → Repository secrets**.
 - (Optional) Add `PERMISSION_API_PUBLIC_URL` to **Repository variables** if not using default endpoint.
 
@@ -124,11 +133,11 @@ docs-sync:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
-        - 'docs/**/*'
-        - '.erp-docs.config.json'
-        - 'scripts/docs-sync/**/*'
+        - "docs/**/*"
+        - ".erp-docs.config.json"
+        - "scripts/docs-sync/**/*"
   variables:
-    PERMISSION_API_PUBLIC_URL: 'https://hd-erp-permission.dev.hdwebsoft.co'
+    PERMISSION_API_PUBLIC_URL: "https://permission.hdwebsoft.co"
   before_script:
     - apt-get update -qq && apt-get install -y -qq git tar curl sed grep
   script:
@@ -137,17 +146,19 @@ docs-sync:
 ```
 
 **GitLab Variables:**
+
 - Add `ERP_DOCS_SYNC_TOKEN` to **Settings → CI/CD → Variables** (Mask variable).
+
 ---
 
 ## Documentation Rules
 
-| Item | Rule |
-|---|---|
-| **Document Title** | First `# H1 Heading` in each `.md` file becomes the Outline document title. If missing, filename is used. |
-| **Folder Node** | Place `README.md` or `index.md` inside a folder to serve as the folder's parent document. |
-| **Images** | Supported formats: `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.webp`. Use standard relative paths like `![alt](./images/pic.png)`. |
-| **Archiving** | If a tracked markdown file is deleted or un-tracked in Git, the next sync archives it in Outline. |
+| Item               | Rule                                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Document Title** | First `# H1 Heading` in each `.md` file becomes the Outline document title. If missing, filename is used.                         |
+| **Folder Node**    | Place `README.md` or `index.md` inside a folder to serve as the folder's parent document.                                         |
+| **Images**         | Supported formats: `.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.webp`. Use standard relative paths like `![alt](./images/pic.png)`. |
+| **Archiving**      | If a tracked markdown file is deleted or un-tracked in Git, the next sync archives it in Outline.                                 |
 
 ---
 
